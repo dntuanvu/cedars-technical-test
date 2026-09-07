@@ -2,7 +2,7 @@
 
 Contract-first take-home: NestJS + PostgreSQL API implementing `homework/openapi.yaml`, and a React + Chakra UI client.
 
-Architecture decisions live in [`design.md`](./design.md) (committed before implementation). Schema notes: [`schema.md`](./schema.md).
+Architecture decisions live in [`design.md`](./design.md) (committed before implementation). Schema notes: [`schema.md`](./schema.md). Collaboration log: [`ai-session-log.md`](./ai-session-log.md), summary: [`AI_COLLABORATION_SUMMARY.md`](./AI_COLLABORATION_SUMMARY.md).
 
 ## One-command setup
 

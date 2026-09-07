@@ -26,3 +26,8 @@
 - Asked: git push to GitHub failed: connect to github.com:443 timed out.
 - Did: checked DNS/HTTPS/SSH; GitHub was reachable again. Pushed `main` `9a369913..2357c82d` to `https://github.com/dntuanvu/cedars-technical-test.git`.
 - Outcome: push succeeded; likely a transient network drop, not a repo/auth problem.
+
+### 2026-09-07 19:30 +08
+- Asked: wrap up the assessment as instructions. Also stated the solution works locally now.
+- Did: generated `AI_COLLABORATION_SUMMARY.md` from this log and git history (session-end prompt).
+- Outcome: wrap-up files added; candidate confirmed local run.
