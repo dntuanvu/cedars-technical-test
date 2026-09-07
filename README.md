@@ -16,6 +16,8 @@ docker compose up --build
 
 Postgres is published on `localhost:5433` (`pomodoro` / `pomodoro` / `pomodoro`) so it does not collide with a local Postgres on 5432. The API container still talks to `postgres:5432` on the compose network.
 
+Stop anything already bound to **3000** or **5173** (local `npm run start:dev` / `npm run dev`) before Compose, or those port mappings will fail.
+
 ## Local development
 
 ```bash
