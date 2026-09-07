@@ -1,0 +1,356 @@
+openapi: 3.1.0
+info:
+  title: Pomodoro Timer API
+  version: 1.0.0
+  description: >
+    API for managing a per-user Pomodoro timer: starting work sessions,
+    pausing/resuming/stopping the active interval, reading live status,
+    and reading/updating per-user interval durations.
+
+servers:
+  - url: /api/v1
+
+security: []
+paths:
+  /sessions:
+    post:
+      summary: Start a new work session
+      operationId: startSession
+      tags:
+        - Sessions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartSessionRequest"
+            example:
+              userId: "u_123"
+      responses:
+        "201":
+          description: Work session started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionStatus"
+        "409":
+          description: A session is already active for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: SESSION_ALREADY_ACTIVE
+                message: A session is already active for this user.
+
+  /sessions/current:
+    patch:
+      summary: Control the current active session
+      operationId: updateCurrentSession
+      tags:
+        - Sessions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionActionRequest"
+            example:
+              action: pause
+      responses:
+        "200":
+          description: Action applied; updated session status returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionStatus"
+        "404":
+          description: No active session for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: NO_ACTIVE_SESSION
+                message: No active session was found for this user.
+
+  /sessions/current/status:
+    get:
+      summary: Get the current session status
+      operationId: getCurrentSessionStatus
+      tags:
+        - Sessions
+      responses:
+        "200":
+          description: Current session status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionStatus"
+        "404":
+          description: No active session for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: NO_ACTIVE_SESSION
+                message: No active session was found for this user.
+
+  /users/{userId}/config:
+    get:
+      summary: Get a user's timer configuration
+      operationId: getUserConfig
+      tags:
+        - Config
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: The user's timer configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimerConfig"
+    put:
+      summary: Replace a user's timer configuration
+      operationId: updateUserConfig
+      tags:
+        - Config
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimerConfig"
+            example:
+              workMinutes: 25.5
+              shortBreakMinutes: 5
+              longBreakMinutes: 15
+      responses:
+        "200":
+          description: Updated timer configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimerConfig"
+
+  /copilot/commands:
+    post:
+      summary: (Bonus) Execute a natural-language timer command via the Copilot agent
+      operationId: runCopilotCommand
+      tags:
+        - Copilot
+      description: >
+        Optional bonus endpoint — see the brief. The provider stub is
+        homework/copilot-llm-stub.ts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CopilotCommandRequest"
+            example:
+              utterance: "Start a 50-minute deep work session, then take a short break."
+              userId: "u_123"
+      responses:
+        "200":
+          description: Command interpreted; each resulting tool call and its execution outcome is returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CopilotCommandResult"
+              example:
+                message: "Started a 50-minute deep work session for u_123."
+                toolCalls:
+                  - tool: updateConfig
+                    arguments:
+                      workMinutes: 50
+                    status: executed
+                    detail: "Set workMinutes to 50."
+                  - tool: startSession
+                    arguments:
+                      userId: "u_123"
+                    status: executed
+                    detail: "Session s_789 started."
+        "422":
+          description: >
+            Returned when the language-model provider produces tool calls
+            that fail validation (unknown tool, out-of-range arguments).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: COPILOT_INVALID_TOOL_CALL
+                message: "Tool call 'deleteAllSessions' is not a recognized tool."
+
+components:
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Identifier of the user whose config is being read or updated.
+
+  schemas:
+    StartSessionRequest:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+          description: Identifier of the user starting the session.
+
+    SessionActionRequest:
+      type: object
+      required:
+        - action
+      properties:
+        action:
+          type: string
+          enum:
+            - pause
+            - resume
+            - stop
+          description: The control action to apply to the current session.
+
+    SessionStatus:
+      type: object
+      required:
+        - sessionId
+        - userId
+        - mode
+        - remainingSeconds
+        - completedCycles
+        - cyclesUntilLongBreak
+      properties:
+        sessionId:
+          type: string
+          description: Identifier of the current timer session.
+        userId:
+          type: string
+          description: Identifier of the user this session belongs to.
+        mode:
+          type: string
+          enum:
+            - work
+            - short_break
+            - long_break
+            - idle
+          description: The interval currently active for this session.
+        remainingSeconds:
+          type: integer
+          minimum: 0
+          description: Seconds remaining in the current interval.
+        completedCycles:
+          type: integer
+          minimum: 0
+          description: Total number of completed work intervals for this user.
+        cyclesUntilLongBreak:
+          type: integer
+          minimum: 0
+          description: >
+            Number of work intervals remaining before a long break (a long
+            break occurs every 3 completed work intervals).
+      example:
+        sessionId: "s_789"
+        userId: "u_123"
+        mode: work
+        remainingSeconds: 742
+        completedCycles: 2
+        cyclesUntilLongBreak: 3
+
+    TimerConfig:
+      type: object
+      required:
+        - workMinutes
+        - shortBreakMinutes
+        - longBreakMinutes
+      properties:
+        workMinutes:
+          type: number
+          exclusiveMinimum: 0
+          description: Duration in minutes.
+        shortBreakMinutes:
+          type: number
+          exclusiveMinimum: 0
+          description: Duration in minutes.
+        longBreakMinutes:
+          type: number
+          exclusiveMinimum: 0
+          description: Duration in minutes.
+      example:
+        workMinutes: 25.5
+        shortBreakMinutes: 5
+        longBreakMinutes: 15
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code.
+        message:
+          type: string
+          description: Human-readable explanation of the error.
+
+    CopilotCommandRequest:
+      type: object
+      required:
+        - utterance
+        - userId
+      properties:
+        utterance:
+          type: string
+          description: The natural-language command to interpret.
+        userId:
+          type: string
+          description: Identifier of the user the command is issued on behalf of.
+
+    ToolCallAudit:
+      type: object
+      required:
+        - tool
+        - arguments
+        - status
+        - detail
+      properties:
+        tool:
+          type: string
+          description: Name of the tool the provider requested.
+        arguments:
+          type: object
+          description: Arguments the provider supplied for this tool call.
+        status:
+          type: string
+          enum:
+            - executed
+            - rejected
+          description: Whether the tool call was executed or rejected by validation.
+        detail:
+          type: string
+          description: Human-readable outcome of this tool call.
+
+    CopilotCommandResult:
+      type: object
+      required:
+        - message
+        - toolCalls
+      properties:
+        message:
+          type: string
+          description: Summary of what the copilot did in response to the utterance.
+        toolCalls:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToolCallAudit"
+          description: Audit trail of every tool call the provider produced and how it was handled.
