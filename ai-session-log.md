@@ -21,3 +21,8 @@
 - Asked: `docker compose up --build` failed when running the solution.
 - Did: reproduced `npm ci` EUSAGE (`@emnapi/core@1.11.3` missing) — lockfile from npm 11 vs Node 22 Alpine's npm 10. Switched both Dockerfiles to `npm install`; added API healthcheck; Vite polling; README note about ports 3000/5173. Rebuilt; compose is up. Verified `/health`, `POST /sessions`, UI 200, proxy `/api/v1/users/.../config`.
 - Outcome: not yet confirmed by candidate.
+
+### 2026-09-07 17:44 +08
+- Asked: git push to GitHub failed: connect to github.com:443 timed out.
+- Did: checked DNS/HTTPS/SSH; GitHub was reachable again. Pushed `main` `9a369913..2357c82d` to `https://github.com/dntuanvu/cedars-technical-test.git`.
+- Outcome: push succeeded; likely a transient network drop, not a repo/auth problem.
