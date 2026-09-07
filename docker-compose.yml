@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pomodoro
+      POSTGRES_PASSWORD: pomodoro
+      POSTGRES_DB: pomodoro
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pomodoro"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: pomodoro
+      DATABASE_PASSWORD: pomodoro
+      DATABASE_NAME: pomodoro
+      PORT: "3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      API_PROXY_TARGET: http://api:3000
+    depends_on:
+      - api
